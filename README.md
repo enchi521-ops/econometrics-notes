@@ -29,7 +29,7 @@ y = \beta_0 + \beta_1 x + u, \qquad \mathrm{Cov}(x,u) \neq 0
 ```
 
 ```math
-\operatorname{plim}\ \hat\beta_1^{OLS} = \beta_1 + \frac{\mathrm{Cov}(x,u)}{\mathrm{Var}(x)} \neq \beta_1
+\mathrm{plim}\ \hat\beta_1^{OLS} = \beta_1 + \frac{\mathrm{Cov}(x,u)}{\mathrm{Var}(x)} \neq \beta_1
 ```
 
 A larger sample does not help: the estimate converges to the wrong number.
@@ -140,11 +140,11 @@ Truly exogenous instruments are hard to find. That does not make IV useless.
 ## 4. Weak and invalid instruments
 
 ```math
-\operatorname{plim}\ \hat\beta_1^{IV} = \beta_1 + \frac{\mathrm{Corr}(z,u)}{\mathrm{Corr}(z,x)}\cdot\frac{\sigma_u}{\sigma_x}
+\mathrm{plim}\ \hat\beta_1^{IV} = \beta_1 + \frac{\mathrm{Corr}(z,u)}{\mathrm{Corr}(z,x)}\cdot\frac{\sigma_u}{\sigma_x}
 ```
 
 ```math
-\operatorname{plim}\ \hat\beta_1^{OLS} = \beta_1 + \mathrm{Corr}(x,u)\cdot\frac{\sigma_u}{\sigma_x}
+\mathrm{plim}\ \hat\beta_1^{OLS} = \beta_1 + \mathrm{Corr}(x,u)\cdot\frac{\sigma_u}{\sigma_x}
 ```
 
 IV has a larger asymptotic bias than OLS when
