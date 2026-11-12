@@ -1,7 +1,9 @@
 # Instrumental Variables & Two-Stage Least Squares (2SLS)
 
 Study notes on Wooldridge, *Introductory Econometrics*, Chapter 15.
-The notes follow the lecture slides and add the intuition emphasized in class.
+The notes follow the lecture slides and add the intuition emphasized in class (sessions of Nov 10 and Nov 12).
+
+**Applied lab →** [`lab-overconfidence/`](lab-overconfidence/): IV/2SLS on data from a published negotiation experiment, in R and Python, with the Sargan and Wu-Hausman tests.
 
 **Contents**
 
@@ -15,8 +17,10 @@ The notes follow the lecture slides and add the intuition emphasized in class.
 8. [Measurement error](#8-measurement-error)
 9. [Properties of 2SLS](#9-properties-of-2sls)
 10. [Testing for endogeneity](#10-testing-for-endogeneity)
-11. [Workflow summary](#11-workflow-summary)
-12. [Key terms](#12-key-terms)
+11. [Testing overidentifying restrictions](#11-testing-overidentifying-restrictions)
+12. [Applied example: confidence in negotiation](#12-applied-example-confidence-in-negotiation)
+13. [Workflow summary](#13-workflow-summary)
+14. [Key terms](#14-key-terms)
 
 ---
 
@@ -51,6 +55,19 @@ Measurement error is the counter-intuitive one: a noisy regressor carries its ow
 | Proxy variable | A good proxy is often unavailable |
 | Fixed effects / first differencing | Needs panel data, a **time-constant** omitted variable, and a **time-varying** regressor of interest |
 | **Instrumental variables** | General solution when the omitted variable cannot be included |
+
+### Why correlation is not enough: doctors and patients
+
+Regress the number of patients on the number of doctors across hospitals and the slope is positive. Doctors do not create patients; patients go where doctors are. That is reverse causality, and OLS cannot recover the effect we care about (doctors treat patients, so patient numbers should fall).
+
+An instrument breaks the loop. Suppose a doctor falls ill **unexpectedly**:
+
+| Condition | Why it holds |
+|---|---|
+| Relevance | Fewer doctors are on duty that day |
+| Exogeneity | Patients do not know about the illness, so they still come; the illness is unrelated to how sick the patients are |
+
+The word *unexpectedly* matters. If the illness lasts long or is announced, patients stay away, and the instrument is now correlated with patient flows through a channel other than treatment.
 
 ---
 
@@ -127,13 +144,16 @@ Return to education for married working women (MROZ data, $n=428$).
 
 ### Other instruments for education in the literature
 
+Every candidate is checked against the same two questions: does it move education (**relevance**), and is it unrelated to everything else in the wage error (**exogeneity**)?
+
 | Instrument | Why relevant | Why exogeneity is doubtful |
 |---|---|---|
-| Number of siblings | More siblings, less schooling per child | Wealthier families may have more children and invest more |
-| College proximity | Living near a college lowers the cost of attending | Families in education-related jobs choose to live near colleges |
-| Month (quarter) of birth | Compulsory schooling laws shift school entry age | Entering school too early or late may affect outcomes directly |
+| Parents' education | Educated parents have more educated children | They may also raise their children better in other ways that pay off in the labour market |
+| Number of siblings | More siblings, less schooling per child | Wealthier families may have more children and invest more in each |
+| College proximity | Living near a college lowers the cost of attending | Families in education-related jobs live near colleges; good jobs may also cluster near colleges |
+| Month (quarter) of birth | Compulsory schooling laws shift school entry age | Entering school too early or late may cause adjustment problems that years of schooling do not capture |
 
-Truly exogenous instruments are hard to find. That does not make IV useless.
+All four look relevant. All four have a plausible exogeneity problem. The instrument should affect $x$ but not $u$, and **the second part is what is hard to satisfy in practice**. That does not make IV useless.
 
 ---
 
@@ -333,6 +353,8 @@ y_1 = \beta_0 + \beta_1 y_2 + \beta_2 z_1 + \delta_1 \hat v_2 + error, \qquad H_
 
 **Logic.** Write $u_1=\delta_1 v_2+e_1$. All of the possible endogeneity in $y_2$ is in $v_2$, so $y_2$ is exogenous if and only if $\delta_1=0$.
 
+**Intuition.** $\hat v_2$ is the part of $y_2$ that the exogenous variables cannot explain, the *leftover* variation in $y_2$. If $y_2$ is truly exogenous, $y_2$ itself already carries all the information it has about $y_1$, and the leftover should have no additional effect. A significant $\hat\delta_1$ means the leftover is picking up something in the error term.
+
 ### Reading the result
 
 | | Hypothesis |
@@ -349,9 +371,71 @@ Absence of evidence is not evidence of absence.
 
 Applied to Example 2: $\hat\delta_1=.058$, $t=1.67$ — moderate evidence of endogeneity. A heteroskedasticity-robust $t$ test can be used as well.
 
+**In software.** In R, `ivreg()` (package `ivreg`) reports this as the **Wu-Hausman** test in `summary(model)$diagnostics`; adding $\hat v_2$ by hand gives the same $p$-value. `ivreg()` and `ivreg2()` use slightly different small-sample conventions, so do not mix their numbers in a paper.
+
 ---
 
-## 11. Workflow summary
+## 11. Testing overidentifying restrictions
+
+The endogeneity test asks whether $y_2$ is exogenous. This test asks whether the **instruments** are. With one instrument per endogenous variable, instrument exogeneity cannot be tested at all. With **more instruments than endogenous variables**, the extra ones can be used to check the others.
+
+| | Hypothesis |
+|---|---|
+| $H_0$ | All instruments are **exogenous** (uncorrelated with $u_1$) |
+| $H_1$ | At least one instrument is endogenous |
+
+**Procedure** (structural equation $y_1=\beta_0+\beta_1y_2+\beta_2z_1+u_1$, instruments $z_2, z_3$):
+
+**Step (i).** Estimate by 2SLS and save the residuals $\hat u_1$.
+
+**Step (ii).** Regress $\hat u_1$ on **all** exogenous variables and keep the $R^2$.
+
+```math
+\hat u_1 = \gamma_0 + \gamma_1 z_1 + \gamma_2 z_2 + \gamma_3 z_3 + error \quad\longrightarrow\quad R_1^2
+```
+
+**Step (iii).** Under $H_0$,
+
+```math
+nR_1^2 \;\overset{a}{\sim}\; \chi^2_q, \qquad q = (\text{number of instruments}) - (\text{number of endogenous regressors})
+```
+
+A large $nR_1^2$ rejects $H_0$: at least some instruments are not exogenous. Most software reports this as the **Sargan** test.
+
+**Why it works.** In the population, exogenous instruments satisfy $\mathrm{Cov}(z_j,u_1)=0$. The residuals estimate $u_1$, so they should have essentially **no relationship** with the instruments, and the regression in step (ii) should have a very low $R^2$. A high $R^2$ means the instruments can predict the structural error, which they should not be able to do.
+
+| Outcome | Conclusion |
+|---|---|
+| Large $nR^2$ (small $p$) | Reject: at least one instrument is endogenous |
+| Small $nR^2$ | Fail to reject. The data show no sign of a problem, but exogeneity is **not proven** |
+
+Two limits worth remembering:
+
+- If the model is **just identified** ($q=0$), the test cannot be run.
+- The test only detects instruments that *disagree*. If all instruments are contaminated in the same direction, they agree with each other and the test passes anyway. Theory still has to carry the argument.
+
+Wooldridge's Example 15.8 (MROZ, parents' education): $nR^2=.385$, $p=.535$. The instruments pass.
+
+---
+
+## 12. Applied example: confidence in negotiation
+
+In the Nov 12 lab we applied the whole chapter to [Soldà et al. (2021)](https://doi.org/10.1177/09567976211007414). Pairs negotiate over a prize that shrinks with delay. Confidence is instrumented with a randomly drawn signal (a green or red ball) about who performed better.
+
+| Step | Result |
+|---|---|
+| OLS | $-0.201$ (biased toward zero) |
+| First stage | Each green ball adds about 30 points of confidence; $F(2,144)=31.4$ → relevant |
+| 2SLS | $-0.401$, 95% CI $[-0.744,-0.059]$ — matches the paper's Table 2, Model 1 |
+| Manual second stage | Same coefficient, wrong SE (0.1741 vs 0.1749) |
+| Sargan | $\chi^2(1)=0.49$, $p=.49$ → fail to reject |
+| Wu-Hausman | $F(1,144)=1.90$, $p=.17$ → fail to reject |
+
+Interpretation: 10 more points of combined confidence cost the pair about 4 percentage points of the prize. The full walkthrough, code, figures and a critique of the instruments are in [`lab-overconfidence/`](lab-overconfidence/README.md).
+
+---
+
+## 13. Workflow summary
 
 ```mermaid
 flowchart TD
@@ -359,7 +443,8 @@ flowchart TD
     B --> C["Stage 1: check relevance<br/>t / F test on instruments"]
     C -->|weak| B
     C -->|strong| D["Stage 2: estimate by 2SLS<br/>use a dedicated routine"]
-    D --> E["Test for endogeneity<br/>H0: delta1 = 0 (exogenous)"]
+    D --> O["If over-identified: Sargan test<br/>H0: instruments exogenous"]
+    O --> E["Test for endogeneity<br/>H0: delta1 = 0 (exogenous)"]
     E -->|reject| F["Report 2SLS"]
     E -->|fail to reject| G["OLS is more precise<br/>but exogeneity is not proven"]
 ```
@@ -367,13 +452,13 @@ flowchart TD
 | Question | Check |
 |---|---|
 | Is the instrument relevant? | First-stage $t$ / $F$ |
-| Is the instrument exogenous? | Not testable with one instrument per endogenous variable; argue it |
+| Is the instrument exogenous? | Argue it from theory. With more instruments than endogenous variables, also run the overidentification (Sargan) test |
 | Is the regressor endogenous? | Residual-inclusion test ($\delta_1$) |
 | Are the standard errors right? | Only from a 2SLS routine, not from a manual second stage |
 
 ---
 
-## 12. Key terms
+## 14. Key terms
 
 | Term | Meaning |
 |---|---|
@@ -389,6 +474,10 @@ flowchart TD
 | Order condition | At least as many excluded exogenous variables as included endogenous variables |
 | Weak instruments | Instruments only weakly correlated with the endogenous regressor |
 | Errors-in-variables | Regressor measured with error |
+| Overidentifying restrictions | The extra exogeneity conditions available when there are more instruments than endogenous variables |
+| Sargan test | $nR^2$ test of overidentifying restrictions, $\chi^2_q$ under $H_0$ |
+| Wu-Hausman test | Test of $H_0$: the regressor is exogenous; regression form adds $\hat v_2$ |
+| Just identified | As many instruments as endogenous variables; overidentification cannot be tested |
 
 ---
 
@@ -396,4 +485,6 @@ flowchart TD
 
 Wooldridge, J. M. *Introductory Econometrics: A Modern Approach*, Chapter 15, "Instrumental Variables Estimation and Two Stage Least Squares." Numerical examples use the MROZ data set from the textbook.
 
-These are personal study notes. Topics in the chapter that the lecture did not cover (overidentification tests, intention-to-treat with randomized eligibility) are omitted.
+Applied example: Soldà, A., Ke, C., von Hippel, W., & Page, L. (2021). Absolute versus relative success: Why overconfidence creates an inefficient equilibrium. *Psychological Science, 32*(10), 1662–1674.
+
+These are personal study notes. Topics in the chapter that the lecture did not cover (intention-to-treat with randomized eligibility) are omitted.

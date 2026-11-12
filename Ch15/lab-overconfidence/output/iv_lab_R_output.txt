@@ -1,0 +1,131 @@
+ final_pot_perc     sum_belief         ball          other_ball    
+ Min.   :  0.00   Min.   : 30.0   Min.   :0.0000   Min.   :0.0000  
+ 1st Qu.: 70.02   1st Qu.: 85.0   1st Qu.:0.0000   1st Qu.:0.0000  
+ Median : 96.66   Median :106.0   Median :0.0000   Median :1.0000  
+ Mean   : 75.69   Mean   :106.6   Mean   :0.4228   Mean   :0.5705  
+ 3rd Qu.:100.00   3rd Qu.:127.0   3rd Qu.:1.0000   3rd Qu.:1.0000  
+ Max.   :100.02   Max.   :190.0   Max.   :1.0000   Max.   :1.0000  
+    score_p2      other_score2  
+ Min.   : 8.00   Min.   : 7.00  
+ 1st Qu.:15.00   1st Qu.:16.00  
+ Median :17.00   Median :19.00  
+ Mean   :17.35   Mean   :18.53  
+ 3rd Qu.:20.00   3rd Qu.:22.00  
+ Max.   :27.00   Max.   :28.00  
+               Estimate  Std. Error    t value     Pr(>|t|)
+(Intercept)  96.0873579 18.30380990  5.2495824 5.319224e-07
+sum_belief   -0.2008910  0.09622674 -2.0876843 3.857558e-02
+score_p2      0.2677533  0.85035603  0.3148720 7.533115e-01
+other_score2 -0.1955571  0.75969678 -0.2574147 7.972236e-01
+
+Call:
+lm(formula = sum_belief ~ ball + other_ball + score_p2 + other_score2, 
+    data = data)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-73.765 -18.636   1.892  17.292 102.272 
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept)   36.8301    13.0977   2.812  0.00561 ** 
+ball          31.6674     5.1278   6.176 6.37e-09 ***
+other_ball    29.9504     4.9644   6.033 1.29e-08 ***
+score_p2       0.5120     0.6782   0.755  0.45156    
+other_score2   1.6425     0.6362   2.582  0.01082 *  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 26.54 on 144 degrees of freedom
+Multiple R-squared:  0.3292,	Adjusted R-squared:  0.3105 
+F-statistic: 17.66 on 4 and 144 DF,  p-value: 8.106e-12
+
+Analysis of Variance Table
+
+Model 1: sum_belief ~ score_p2 + other_score2
+Model 2: sum_belief ~ ball + other_ball + score_p2 + other_score2
+  Res.Df    RSS Df Sum of Sq      F    Pr(>F)    
+1    146 145656                                  
+2    144 101448  2     44208 31.376 4.896e-12 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+                       Estimate Std. Error     t value     Pr(>|t|)
+(Intercept)        111.19860913 21.2780137  5.22598635 5.922538e-07
+fitted(firstModel)  -0.40144932  0.1741084 -2.30574331 2.254292e-02
+score_p2             0.36391967  0.8505004  0.42788889 6.693669e-01
+other_score2         0.05294088  0.7783789  0.06801427 9.458680e-01
+
+2SLS Estimation
+
+Call:
+ivreg2(formula = final_pot_perc ~ score_p2 + other_score2 | sum_belief | 
+    ball + other_ball, data = data, first_stage = TRUE)
+
+Observations: 149 
+VCV type:     Classical (iid) 
+
+Coefficients:
+              Estimate Std. Error z value Pr(>|z|)    
+(Intercept)  111.19861   21.37077   5.203 1.96e-07 ***
+sum_belief    -0.40145    0.17487  -2.296   0.0217 *  
+score_p2       0.36392    0.85421   0.426   0.6701    
+other_score2   0.05294    0.78177   0.068   0.9460    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+---
+R-squared:      0.0024 
+Adj. R-squared: -0.0182 
+Wald chi2(3):  1.8 (p = 0.1455)
+Root MSE:       36.7672 
+
+Underidentification test (Anderson canon. corr. LM statistic):
+  Chi-sq(2) = 45.22 (p = 0.0000)
+
+Weak identification test:
+  Cragg-Donald Wald F:           31.38 
+  Stock-Yogo critical values (IV size):
+     10%  maximal IV size       19.93 
+     15%  maximal IV size       11.59 
+     20%  maximal IV size       8.75 
+     25%  maximal IV size       7.25 
+
+Overidentification test (Sargan):
+  Chi-sq(1) = 0.49 (p = 0.4854)
+
+Weak-instrument-robust inference:
+  H0: B1=0 and orthogonality conditions are valid
+  Anderson-Rubin Wald F(2,144) = 2.89 (p = 0.0586)
+  Anderson-Rubin Wald Chi-sq(2) = 5.99 (p = 0.0501)
+  Stock-Wright LM S Chi-sq(2) = 5.76 (p = 0.0562)
+
+Endogeneity test:
+  Chi-sq(1) = 1.95 (p = 0.1631)
+  Tested: sum_belief
+
+First-stage diagnostics:
+  Endogenous        F-stat   p-value  Partial R2  Shea PR2      SW F      AP F
+  sum_belief         31.38    0.0000      0.3035    0.3035     31.38     31.38
+
+Instrumented:          sum_belief 
+Included instruments:  score_p2, other_score2 
+Excluded instruments:  ball, other_ball 
+
+ (Intercept)   sum_belief     score_p2 other_score2 
+111.19860913  -0.40144932   0.36391967   0.05294088 
+$sum_belief
+
+First-stage regression: sum_belief ~ instruments
+
+Coefficients:
+ (Intercept)      score_p2  other_score2          ball    other_ball  
+      36.830         0.512         1.643        31.667        29.950  
+
+
+                 df1 df2  statistic      p-value
+Weak instruments   2 144 31.3757207 4.895580e-12
+Wu-Hausman         1 144  1.9048139 1.696794e-01
+Sargan             1  NA  0.4867535 4.853791e-01
+  Estimate Std. Error    t value   Pr(>|t|) 
+ 0.2879564  0.2086414  1.3801499  0.1696794 
+      nR2        df   p.value 
+0.4867535 1.0000000 0.4853791 
